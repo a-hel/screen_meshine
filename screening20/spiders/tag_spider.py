@@ -30,9 +30,9 @@ class TagSpider(scrapy.Spider):
 
 
         scraped_terms = [_extract_terms(url) for url in response.css("div[class='entry-content']")]
-        with open('resfile.txt', 'a') as f:
+        with open('resfile.txt', 'w') as f:
             for scraped_term in scraped_terms:
-    			f.write(','.join(extracted))
+    			f.write(','.join(scraped_term))
     			f.write('\n')
     	
             #term_item = TermItem()
@@ -47,8 +47,9 @@ class TagSpider(scrapy.Spider):
 def _decompile_terms(response):
     """Find mesh terms from raw html using regexp"""
     
-    regex = re.compile('^<a href="https://www.nlm.nih.gov/cgi/mesh/2016/MB_cgi\?term=[\w ]+" target')
-    pos = regex.match(termline)
+    exp = '(?<=term=)[\w ]*(?=" target)'
+    res = re.findall(exp, response)
+    term_list = list(set(res))
     return term_list
 
 def _get_mesh_terms(raw_text):
