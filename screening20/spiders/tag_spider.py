@@ -12,25 +12,21 @@ class TagSpider(scrapy.Spider):
     name = 'tagspider'
     tags = ['health', 'flu']
     lang = 'en'
-    start_urls = ['https://%s.wordpress.com/tag/%s' % (lang, tag) for tag in tags]
+    #start_urls = ['https://%s.wordpress.com/tag/%s' % (lang, tag) for tag in tags]
+    start_urls = ['https://public-api.wordpress.com/rest/v1.1/read/tags/%s/posts' % 'flu',]
 
     def parse(self, response):
         # Get blogs entries with tags
-        for href in response.css("a[class='post-title']::attr('href')"):# > a::attr('href')"):
-            url = href.extract()
-            print "url"
-            print url
-            yield scrapy.Request(url, callback=self.parse_dir_contents)
+        print response
+        #for href in response.css("a[class='post-title']::attr('href')"):# > a::attr('href')"):
+        #    url = href.extract()
+        #    yield scrapy.Request(url, callback=self.parse_dir_contents)
 
     def parse_dir_contents(self, response):
     	"""Get blog entries from url"""
 
-        print "Response"
-        print response
-
-
         scraped_terms = [_extract_terms(url) for url in response.css("div[class='entry-content']")]
-        with open('resfile.txt', 'w') as f:
+        with open('resfile.txt', 'a') as f:
             for scraped_term in scraped_terms:
     			f.write(','.join(scraped_term))
     			f.write('\n')
