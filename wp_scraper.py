@@ -78,4 +78,4 @@ def main(tags, n_posts, fname="results.txt"):
 
 
 if __name__ == "__main__":
-	main(['infection', 'flu', 'bacteria', 'virus', 'bronchitis', 'headache'], 500)
+	main(['bacteria', 'virus', 'bronchitis', 'headache'], 500)
