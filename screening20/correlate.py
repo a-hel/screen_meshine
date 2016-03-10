@@ -21,7 +21,7 @@ def color_by_cat(mappings, all_terms):
         'G': 'white'}
 
 def _is_in_cat(cat, all_cats):
-	"""Check if cat is in all_cats."""
+    """Check if cat is in all_cats."""
 
     if not all_cats:
         return True
@@ -46,7 +46,7 @@ def build_matrix(res_file, cat_file, categories=[]):
     """Build sparse x*x matrix for correlation"""
 
     active_terms, cat_table = _filter_terms(res_file, cat_file, categories)
-    active_terms_flat = itertools.chain.from_iterable(active_terms) 
+    active_terms_flat = itertools.chain.from_iterable(active_terms)
     active_set = list(set(active_terms_flat))
     dim = len(active_set)
     lookup = {term: idx for idx, term in enumerate(active_set)}
@@ -93,8 +93,9 @@ def create_plot(corr_map, mappings, minweight=1):
     edgewidth = np.around(np.log(edgewidth))*edge_scale
     nodesize = np.array(nodesize, dtype='uint8')*node_scale
     nodelabels_dict = {idx[i]: lbl for i, lbl in enumerate(nodelabels)}
-    plt.figure(figsize=(50,50))
-    pos = nx.spring_layout(G)
+    plt.figure(figsize=(20,20))
+    pre_pos = nx.circular_layout(G)
+    pos = nx.spring_layout(G, k=None, pos=pre_pos, iterations=100, scale=1)
     #pos = nx.circular_layout(G)
     nx.draw_networkx_labels(G, pos, labels=nodelabels_dict, fontsize=12)
     nx.draw_networkx_edges(G, pos, width=edgewidth, edge_color='grey', alpha=0.6)
