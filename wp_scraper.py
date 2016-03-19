@@ -6,12 +6,6 @@ import re
 from bs4 import BeautifulSoup
 
 
-base_url = 'https://public-api.wordpress.com/rest/v1.1/read/tags/%s/posts'
-tags = ['flu','health']
-
-
-
-
 def _decompile_terms(response):
     """Find mesh terms from raw html using regexp"""
     
@@ -37,9 +31,6 @@ def _remove_html(html):
     naked_body_encoded =  naked_body.encode('utf-8')
     return naked_body_encoded
 
-def bla():
-    mesh_terms = _get_mesh_terms(raw_data)
-    return mesh_terms
 
 def get_post_content(tag, number, page=1):
 
@@ -78,4 +69,5 @@ def main(tags, n_posts, fname="results.txt"):
 
 
 if __name__ == "__main__":
-	main(['bacteria', 'virus', 'bronchitis', 'headache'], 500)
+	main(['bacteria', 'virus', 'infection', 'antibiotic',
+		'natural cure', 'medicinal plants', 'home remedy', ], 1000)
