@@ -69,5 +69,5 @@ def main(tags, n_posts, fname="results.txt"):
 
 
 if __name__ == "__main__":
-	main(['bacteria', 'virus', 'infection', 'antibiotic',
-		'natural cure', 'medicinal plants', 'home remedy', ], 1000)
+	main([#'bacteria', 'virus', 'infection', 'antibiotic',
+		'natural remedy', 'medicinal plants', 'home remedy', ], 1000)
