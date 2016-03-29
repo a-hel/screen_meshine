@@ -1,3 +1,12 @@
+A
+B
+B
+B
+B
+D
+C
+A
+B
 
 import requests
 import json
