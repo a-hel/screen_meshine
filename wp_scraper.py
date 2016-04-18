@@ -2,6 +2,9 @@
 import requests
 import json
 import re
+import grequests
+
+
 
 from bs4 import BeautifulSoup
 
@@ -18,9 +21,11 @@ def _get_mesh_terms(raw_text):
     """extract mesh terms from raw_text"""
     
     mesh_url = r"http://ii.nlm.nih.gov/cgi-bin/II/Interactive/MeSHonDemand.pl"
-    response = requests.post(mesh_url, data=raw_text)
-    response_encoded = response.text.encode('utf-8')
-    terms = _decompile_terms(response_encoded)
+    rs = [grequests.post(mesh_url, data=raw) for raw in raw_text]
+    #response = requests.post(mesh_url, data=raw_text)
+    responses = grequests.map(rs)
+    response_encoded = [r.text.encode('utf-8') for r in responses]
+    terms = [_decompile_terms(r) for r in response_encoded]
     return terms
 
 
@@ -54,20 +59,26 @@ def main(tags, n_posts, fname="results.txt"):
 	ppp = n_posts%40
 	for tag in tags:
 		mesh_terms = []
+
 		for i in xrange(cycles):
+			raw_text = []
 			print "Tag: %s, cycle %s of %s" % (tag, i+1, cycles)
 			for post in get_post_content(tag, ppp, page=i+1):
 				plain_text = _remove_html(post)
 				raw_data = {"InputText": plain_text}
-				mesh_terms.append(_get_mesh_terms(raw_data))
+				raw_text.append(raw_data)
+			mesh_terms = _get_mesh_terms(raw_text)
+			save_mesh(mesh_terms, fname, tag)
+			#	mesh_terms.append(_get_mesh_terms(raw_data))
 			ppp = 40
-			if i%10 == 0:
-				save_mesh(mesh_terms, fname, i)
-				mesh_terms = []
-		save_mesh(mesh_terms, fname, tag)
+			#if i%10 == 0:
+			#	save_mesh(mesh_terms, fname, i)
+			#	mesh_terms = []
+		#save_mesh(mesh_terms, fname, tag)
 
 
 
 if __name__ == "__main__":
-	main([#'bacteria', 'virus', 'infection', 'antibiotic',
-		'natural remedy', 'medicinal plants', 'home remedy', ], 1000)
+	main(['bacteria', 'virus', 'infection', 'antibiotic',
+		'natural+remedy', 'medicinal+plants', 'home+remedy', ], 10000,
+		fname="result-big.txt")
