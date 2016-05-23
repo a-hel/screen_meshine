@@ -1,9 +1,28 @@
 #!/bin/sh
+
+
 bin_dir=../bin/
 api_dir=SKR_Web_API_V2_1
-usage="nada"
 plugins=()
 searchterms=()
+
+usage=" \n \n
+Usage: \n \n
+
+no parameters: \t		Start program in quickstart mode \n
+ -h, --help: \t\t		Display this help \n
+-pr, --project: \t	Unique project identifier \n
+-u, --username: \t	Your UMLS username \n
+-pw, --password: \t	Your UMLS password \n
+-e, --email: \t\t		A valid e-mail address \n
+-pl, --plugins: \t	Plugins to include in search \n
+-t, --terms: \t\t		Search terms for this project \n
+-n, --number: \t\t		Number of posts to retrieve per plugin and term \n
+ \n
+Check out the online documentation. \n \n"
+
+
+# Quickstart mask
 
 if [ $# -lt 1 ]; then
     echo "*********************************"
@@ -20,8 +39,17 @@ if [ $# -lt 1 ]; then
     echo "Example: Search terms: motorbike car+insurance"
     read -p "Search terms: " -a searchterms
     read -p "Chose how many entries to retrieve per term and plugin: " n_terms
-    
+    read -p "Do you want to run the program now (yes/no/help): " status
+    case $status in
+    	yes | y | 1 | true ) 	echo Starting project $project
+								;;
+		help | h | ? )			echo $usage
+								exit 0
+								;;
+		* )						exit 0
+	esac
 else
+	# Argument loop
     while [ "$1" != "" ]; do
         case $1 in
             -pr | --project )    shift
@@ -45,6 +73,7 @@ else
                                 shift      
                                 ;;
 
+
             -pl | --plugins )   shift
                                 while [ "${1:0:1}" != "-" ] && [ "$1" != "" ]; do
                                     plugins+=$1
@@ -64,8 +93,8 @@ else
                                 echo $1
                                 ;;
 
-            -h | --help )       echo $usage
-								shift
+            -h | ? | --help )   echo $usage
+								exit 0
                                 ;;
         * )                     shift
         esac
@@ -75,19 +104,20 @@ fi
 
 res_dir=../projects/$project
 mkdir $res_dir
+if [ $? == 1 ]; then
+	echo "Project $project already exists."
+	exit 1
+fi
 
+# Invoke python scraper
 py_string="-to $res_dir -p $plugins $n_terms $searchterms"
-echo $py_string
 python scraper.py $py_string
 
 res_files=($res_dir/res_*)
 infiles=${res_files[@]}
-echo $infiles
 
-
-
+# Set variables for java
 BASEDIR=$api_dir
-
 CP=$BASEDIR/lib/httpclient-4.1.1.jar:$BASEDIR/lib/httpclient-cache-4.1.1.jar
 CP=$CP:$BASEDIR/lib/httpcore-4.1.jar:$BASEDIR/lib/httpcore-nio-4.1.jar
 CP=$CP:$BASEDIR/lib/httpmime-4.1.1.jar
@@ -95,8 +125,10 @@ CP=$CP:$BASEDIR/lib/commons-logging-1.1.1.jar
 CP=$CP:$BASEDIR/lib/skrAPI.jar
 CP=$CP:./
 
-#infiles="$res_dir/res_1.txt $res_dir/res_2.txt"
-outfiles=$res_dir/out.txt
+outfile=$res_dir/out.txt
 
+# Invoke java indexer
 cd $bin_dir
-java -cp $BASEDIR/classes:$CP JobSubmitter $username $password $email $outfiles $infiles
+java -cp $BASEDIR/classes:$CP JobSubmitter $username $password $email $outfile $infiles
+
+echo "Data retrieval for $project done"
