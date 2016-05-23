@@ -123,23 +123,33 @@ def _import_plugins(names=False, pluginpath='./plugins/'):
 
 	
 
-def main(tags, n_posts, plugins=('wp'), target="results.txt", buf=100,
+def main(tags, n_posts, plugins=('wp'), target="new_project", buf=100,
 	chunk_size=2):
 	engines = _import_plugins(plugins)
+	indic_len = 10000
+	l_counter = 0
+	f_counter = 1
+	f_list = []
+	text_list = []
 
 	for engine in engines:
 		# Plug-ins recieve the number of posts to return and 
 		# yield chuncks of posts
-		text_chunk = [[]] * chunk_size
+		
+		#text_chunk = [[]] * chunk_size
 
 		for e, txt in enumerate(engine.main(tags, n_posts)):
-			idx = e % chunk_size
-			print(e, chunk_size, idx)
-			text_chunk[idx] = txt
-			if idx == (chunk_size-1):
-				mesh = _get_mesh_terms(text_chunk)
-				save_mesh(mesh, target, buf)
-	return target
+			l_counter += len(txt)
+			text_list.append(txt)
+			if l_counter >= indic_len:
+				fname = "res_%s.txt" % f_counter
+				with open(target + os.sep + fname, "w") as f:
+					f.write("\n".join(text_list))
+					f_list.append(fname)
+				l_counter = 0
+				f_counter += 1
+				text_list = []
+	return f_list
 			
 
 
@@ -175,10 +185,10 @@ if __name__ == "__main__":
 		i += 1
 
 	
-	#target = main(tags, size, plugins=plugins, 
-	#	target="%s%s%s.txt" % (to, os.sep, fname))
-
-	cleaned = clean('results.txt')
+	main(tags, size, plugins=plugins, 
+		target=to)
+	sys.exit(0)
+	#cleaned = clean('results.txt')
 
 	#main(['medicine', 'nature', 'cure', 'plants',
 	#	'herbal+remedy', 'traditional+remedy',], 1000, fname="results_2.txt")

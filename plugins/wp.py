@@ -10,6 +10,19 @@ def _remove_html(html):
     naked_body_encoded =  naked_body.encode('utf-8')
     return naked_body_encoded
 
+def _get_compact_ascii(plain_text):
+	"""Remove non-ascii characters and double newlines"""
+	no_ascii = plain_text.decode('utf-8').encode('ascii', errors='ignore')
+	#Replacement with withespace in case of four consecutive newlines
+	no_nl = no_ascii.replace('\n', ' ')
+	return no_nl
+
+
+def _clean_post(post):
+
+	no_html = _remove_html(post)
+	compact = _get_compact_ascii(no_html)
+	return compact
 
 def get_post_content(tag, number, page=1):
 
@@ -28,15 +41,14 @@ def _get_html(request_url):
 		yield html
 
 def _dispatch(tags, size):
-	chunk_size = 40
-	cycles = int(size/chunk_size)+1
+	chunk_size = min(size, 40)
+	cycles = int(size/chunk_size)#+1
 	ppp = size % chunk_size
 	for tag in tags:
 		for i in xrange(cycles):
 			print("Tag: %s, cycle %s of %s" % (tag, i+1, cycles))
-			print(tag)
 			for post in get_post_content(tag, ppp, page=i+1):
-				plain_text = _remove_html(post)
+				plain_text = _clean_post(post)
 				yield plain_text
 
 def main(tags, size=1):
