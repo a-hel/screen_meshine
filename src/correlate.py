@@ -10,6 +10,19 @@ import matplotlib.pyplot as plt
 
 
 def _get_colors(cats, col_scheme="default"):
+    """Return a list of color codes for given categories, based on the color
+    scheme.
+
+    Arguments:
+
+    cats (iterable): The category codes of the terms to be plotted
+    col_scheme (str, default="default"): Name of the color scheme.
+
+    Returns:
+
+    List of strings of the same length as cats
+    """
+
     default = {'A': 'red',
         'B': 'blue',
         'C': 'green',
@@ -23,7 +36,18 @@ def _get_colors(cats, col_scheme="default"):
     return colors
 
 def _is_in_cat(cat, all_cats):
-    """Check if cat is in all_cats."""
+    """Return True if cat is in all_cats, else False.
+
+    Arguments:
+
+    cat (str): Category code to query
+    all_cats (iterable): List of all categories to include. If empty,
+        all categories are included.
+
+    Returns:
+
+    bool
+    """
 
     if all_cats == []:
         return True
@@ -32,19 +56,22 @@ def _is_in_cat(cat, all_cats):
             return True
     return False
 
-def _filter_termsxx(res_file, cat_file, categories):
-    """return results from res_file that fall into categories."""
-
-    with open(cat_file, 'r') as cf:
-        cf_pairs = [line.split(',') for line in cf if line != '\n']
-        cat_table = {term.strip(): code.strip() for term, code in cf_pairs}
-    with open(res_file, 'r') as rf:
-        rf_pairs = [line.split(',') for line in rf if line != '\n']
-        filtered_res = [[term.strip() for term in terms if
-            _is_in_cat(cat_table[term.strip()], categories)] for terms in rf_pairs]
-    return filtered_res, cat_table
 
 def _load_dataset(res_file, categories, exclude=[]):
+    """Read the extracted MeSH terms into dict.
+
+    Arguments:
+
+    res_file (str): File name and path to load
+    categories (list): List of category codes to include in the analysis
+    exclde (list, default=[]): List of MeSH terms to exclude from the analysis.
+
+    Returns:
+
+    Dict with post number as keys and a list of tuples (MeSH term, category)
+        as values
+    """
+
     posts = {}
     with open(res_file, "r") as f:
         for line in f:
@@ -64,6 +91,18 @@ def _load_dataset(res_file, categories, exclude=[]):
     return posts
 
 def _flatten(dataset):
+    """Return lists of MeSH terms, category codes, color codes for unique
+    MeSH terms.
+
+    Arugments:
+
+    dataset (dict): A dataset as output by _load_dataset()
+
+    Returns:
+
+    List of unique MeSH terms, list of their category, list of their color
+    """
+
     arr = reduce(list.__add__,[dataset[key] for key in dataset.keys()])
     uniques = list(set(arr))
     terms, cats = zip(*uniques)
@@ -73,7 +112,21 @@ def _flatten(dataset):
 
 def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     color_scheme="default"):
-    """Build sparse x*x matrix for correlation"""
+    """Build sparse x*x matrix to count correlations.
+
+    Arguments:
+
+    res_file (str): File name and path to load
+    categories (list, default=[]): List of categories to include
+    highlight (str, default=False): MeSH term to highlight
+    exclude (list, default=[]): List of MeSH terms to exclude
+    color_scheme (str, default="default"): Color scheme for the plot
+
+    Returns:
+
+    Correlation matrix, metadata
+
+    """
 
     dataset = _load_dataset(res_file, categories, exclude)
     terms, cats, colors = _flatten(dataset)
@@ -89,14 +142,31 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
             if highlight not in termline:
                 continue
             else:
-                combs = ((highlight, term) for term in termline if term != highlight)
+                combs = ((highlight, term) for term in termline 
+                        if term != highlight)
         for x,y in combs:
             corr_map[lookup[x], lookup[y]] += 1
-    mappings = {'lookup': lookup, 'terms': terms, 'cats': cats, 'colors': colors}
+    mappings = {'lookup': lookup,
+        'terms': terms, 
+        'cats': cats, 
+        'colors': colors}
     corr_map = corr_map + corr_map.transpose()
     return corr_map, mappings
 
 def create_plot(corr_map, mappings, minweight=1):
+    """Draw plot and metadata.
+
+    Arguments:
+
+    corr_map (scipy.sparse.dok_matrix): Correlation matrix as returned from
+        build_matrix()
+    mappings (dict): Correlation metadata as returned from build_matrix()
+    minweight (int, default=1): Minimum number of co-occurrences to draw.
+
+    Returns:
+
+    Matplotlib plot, edge metadata
+    """
 
     node_scale = 4
     edge_scale = 1
@@ -142,9 +212,19 @@ def create_plot(corr_map, mappings, minweight=1):
     return plt, lit_edges
 
 def usage():
-    return "blah"
+    """Print help text"""
+    help_text = "Usage:\n"
+    help_text += "python correlate.py <cat1> <cat2> -p project !<exclude>\n"
+    help_text += "Options:\n"
+    help_text += "-mw \t Minimum weight of edges\n"
+    help_text += "-hl \t Highlight term\n"
+    help_text += "-h \t Help\n"
+    help_text += "Example:\n"
+    help_text += "correlate.py B01 B02 C -p NewProject -mw 10 !Humans !Cats"
+    return help_text
+
+
 if __name__ == '__main__':
-    #exclude, minweight
     categories = []
     minweight = 10
     exclude = []
@@ -175,7 +255,7 @@ if __name__ == '__main__':
                 i += 1
                 project = sys.argv[i]
                     
-        elif arg.startswith('!'):
+        elif arg.startswith('/'):
             exclude.append(arg[1:])
         else:
             categories.append(arg)
