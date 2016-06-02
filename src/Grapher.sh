@@ -1,35 +1,50 @@
 #!/bin/sh
 
 
-usage=" \n \n
-Usage: \n \n
+usage=" 
+  Usage:
+  ./Grapher.sh <cat1> <cat2> -p project /<exclude>
 
-./Grapher.sh <cat1> <cat2> -p project !<exclude>\n
-Options:\n
--mw, --minimumweight \t Minimum weight of edges\n
--hl, --highlight \t Highlight term\n
--h, --help \t\t Display this help\n
-Example:\n
-./Grapher.sh B01 B02 C -p NewProject -mw 10 !Humans !Cats
- \n
-Check out the online documentation. \n \n"
+  Options:
+  -mw, --minimumweight \t Minimum weight of edges
+  -hl, --highlight \t Highlight term
+  -h, --help \t\t Display this help
+
+  Example:
+  ./Grapher.sh B01 B02 C -p NewProject -mw 10 /Humans /Cats
+
+  Check out the online documentation.
+  "
 
 
 pycommand="correlate.py $@"
-echo $pycommand
+hasProject=false
+
+if [ "$#" -le 0 ]; then
+	echo "$usage"
+	exit 0
+fi
 # Argument loop
+
+
 while [ "$1" != "" ]; do
     case $1 in
-        
-        -h | ? | --help )   echo $usage
+        -h | "?" | --help ) echo "$usage"
 							exit 0
                             ;;
-    * )                     echo "*"
-                            shift
+        -p | --project )    hasProject=true
+							shift
+                            ;;
+    * )                     shift
                             ;;
     esac
     
 done
 
-echo "$pycommand"
-python $pycommand
+if $hasProject ; then
+    python $pycommand
+else
+	echo "No project specified."
+	echo "Use -p to specify project or -h for help."
+	exit 0
+fi

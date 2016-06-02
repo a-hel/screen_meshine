@@ -172,6 +172,7 @@ def create_plot(corr_map, mappings, minweight=1):
     edge_scale = 1
     node_sums = corr_map.sum(axis=0).tolist()[0]
     terms = mappings['terms']
+    print(terms)
     edgewidth = []
     nodeprops = []
     lit_edges = []
@@ -223,6 +224,42 @@ def usage():
     help_text += "correlate.py B01 B02 C -p NewProject -mw 10 !Humans !Cats"
     return help_text
 
+def main(project, categories=[], minweight=1, highlight=False, exclude=[],
+    color_scheme="default"):
+    """Build and show the graph.
+
+    Arguments:
+    project (str): The project name
+    categories (list, default=[]): The MeSH categories to include. If
+        the list is empty, all categories will be included.
+    minweight (int, default=1): Minimum weight necessary for connections
+        to be displayed.
+    highlight (str, default=False): A specific term to highlight. If
+        false, no term will be highlighted
+    exclude (list, default=[]): List of terms to exclude from the analysis.
+    color_scheme (str, default="default"): Not yet implemented.
+    """
+    project_path = "../projects/"
+    if not os.path.isdir(project_path + project):
+        raise NameError, "The project '%s' does not exist." % project
+    if not os.path.exists(project_path + project + "/out.txt"):
+        raise NameError, "Result file from project '%s' is missing" % project
+    corr_map, mappings = build_matrix(project_path + project + "/out.txt",
+        categories=categories, highlight=highlight,  exclude=exclude,
+        color_scheme=color_scheme)
+    plt, edges = create_plot(corr_map, mappings, minweight=minweight)
+    with open(project_path + project +'/info_%s.txt' % gid, 'w') as f:
+        f.write('# Information for Graph %s\n' % gid)
+        f.write('# Project: %s\n' % project)
+        f.write('# Command: %s\n' % " ".join(sys.argv))
+        f.write('# Edges (start, end, weight):\n')
+        for edge in edges:
+            f.write(", ".join(edge))
+            f.write("\n")
+    plt.savefig(project_path + project +'/graph_%s.png' % gid)
+    plt.show()
+    return True
+
 
 if __name__ == '__main__':
     categories = []
@@ -260,18 +297,9 @@ if __name__ == '__main__':
         else:
             categories.append(arg)
         i += 1
-    project_path = "../projects/"
-    corr_map, mappings = build_matrix(project_path + project + "/out.txt",
-        categories=categories, highlight=highlight,  exclude=exclude,
-        color_scheme=color_scheme)
-    plt, edges = create_plot(corr_map, mappings, minweight=minweight)
-    with open(project_path + project +'/info_%s.txt' % gid, 'w') as f:
-        f.write('# Information for Graph %s\n' % gid)
-        f.write('# Project: %s\n' % project)
-        f.write('# Command: %s\n' % " ".join(sys.argv))
-        f.write('# Edges (start, end, weight):\n')
-        for edge in edges:
-            f.write(", ".join(edge))
-            f.write("\n")
-    plt.savefig(project_path + project +'/graph_%s.png' % gid)
-    plt.show()
+    try:
+        main(project, categories, minweight, highlight, exclude,
+            color_scheme="default")
+    except NameError, e:
+        print('Error: %s' % e)
+    

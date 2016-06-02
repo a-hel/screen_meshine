@@ -73,15 +73,12 @@ else
                                 n_terms=$1
                                 shift      
                                 ;;
-
-
             -pl | --plugins )   shift
                                 while [ "${1:0:1}" != "-" ] && [ "$1" != "" ]; do
                                     plugins+=$1
                                     plugins+=","
                                     shift
                                 done
-                                
                                 ;;
             -t | --terms )      shift
                                 while [ "${1:0:1}" != "-" ] && [ "$1" != "" ]; do
@@ -93,7 +90,6 @@ else
                                 
                                 echo $1
                                 ;;
-
             -h | ? | --help )   echo $usage
 								exit 0
                                 ;;
