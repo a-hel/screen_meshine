@@ -53,7 +53,7 @@ import java.io.*;
 import java.util.Arrays;
 import gov.nih.nlm.nls.skr.*;
 
-public class JobSubmitter
+public class Indexer
 {
     static String defaultCommand = "MTI -opt1L_DCMS -E";
 
@@ -61,7 +61,7 @@ public class JobSubmitter
     /** print information about server options */
     public static void printHelp() 
     {
-      System.out.println("usage: JobSubmitter username password e-mail");
+      System.out.println("usage: Indexer username password e-mail");
       System.out.println("  output_file input_file_1 input_file_2 input_file_n ");  
     }
 

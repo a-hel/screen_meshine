@@ -26,8 +26,9 @@ Check out the online documentation. \n \n"
 
 if [ $# -lt 1 ]; then
     echo "*********************************"
-    echo "**           WELCOME           **"
+    echo "**    MedCrawler Quickstart    **"
     echo "*********************************"
+    echo ""
     read -p "Enter project name: " project
     read -p "Enter user name: " username
     read -p "Enter password: " -s password
@@ -129,6 +130,6 @@ outfile=$res_dir/out.txt
 
 # Invoke java indexer
 cd $bin_dir
-java -cp $BASEDIR/classes:$CP JobSubmitter $username $password $email $outfile $infiles
+java -cp $BASEDIR/classes:$CP Indexer $username $password $email $outfile $infiles
 
 echo "Data retrieval for $project done"
