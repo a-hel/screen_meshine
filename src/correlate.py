@@ -1,9 +1,10 @@
 #!usr/bin/python
 
 import sys
+import os
 import numpy as np
 import scipy
-from collections import defaultdict
+from collections import defaultdict, Counter
 import itertools
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -105,6 +106,8 @@ def _flatten(dataset):
 
     arr = reduce(list.__add__,[dataset[key] for key in dataset.keys()])
     uniques = list(set(arr))
+    if uniques == []:
+        return False
     terms, cats = zip(*uniques)
     colors = _get_colors(cats, col_scheme="default")
     return terms, cats, colors
@@ -129,10 +132,19 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     """
 
     dataset = _load_dataset(res_file, categories, exclude)
-    terms, cats, colors = _flatten(dataset)
+    tcc = _flatten(dataset)
+    if tcc:
+        terms, cats, colors = tcc
+    else:
+        msg = "\nWARNING:\n"
+        msg += "Your category settings dont yield any results.\n"
+        msg += "Try different category settings."
+        print(msg)
+        sys.exit(0)
     dim = len(terms)
     lookup = {term: idx for idx, term in enumerate(terms)}
     corr_map = scipy.sparse.dok_matrix((dim, dim), dtype=np.int)
+
 
     for keys in dataset:
         termline = zip(*dataset[keys])[0]
@@ -172,13 +184,24 @@ def create_plot(corr_map, mappings, minweight=1):
     edge_scale = 1
     node_sums = corr_map.sum(axis=0).tolist()[0]
     terms = mappings['terms']
-    print(terms)
     edgewidth = []
     nodeprops = []
     lit_edges = []
     G = nx.MultiGraph()
     corr_map_coo = corr_map.tocoo()
     max_correlations = corr_map_coo.max(axis=0).toarray()[0]
+    if max(max_correlations) < minweight:
+        ctr = Counter(max_correlations)
+        msg = "\nWARNING:\n"
+        msg += "Your minweight setting (%s) is larger than your " % minweight  +\
+            "strongest connection (%s)\n\n" % max(max_correlations)
+        msg += "Weight distribution:\n"
+        msg += " W \t  n \n"
+        msg += "--- \t --- \n"
+        for pair in ctr.items():
+            msg += "%s \t %s \n" % pair
+        print(msg)
+        sys.exit(0)
     node_sums = corr_map_coo.sum(axis=0).tolist()[0]
     for i, max_ in enumerate(max_correlations):
         if max_ >= minweight:
@@ -188,6 +211,12 @@ def create_plot(corr_map, mappings, minweight=1):
             n_size =  node_sums[i]*node_scale
             n_label = terms[i]
             nodeprops.append([n_color, n_size, n_label, i])
+    if len(nodeprops) == 0:
+        msg = "\nERROR:\n"
+        msg += "Your current settings do not produce any connections.\n"
+        msg += "Try different settings."
+        print(msg)
+        sys.exit(0)
     nodecolor, nodesize, nodelabels, idx = zip(*nodeprops)
     for item in corr_map.items():
         start, end = item[0]
@@ -239,11 +268,18 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
     exclude (list, default=[]): List of terms to exclude from the analysis.
     color_scheme (str, default="default"): Not yet implemented.
     """
+
     project_path = "../projects/"
+    if not os.path.isdir(project_path):
+        os.mkdir(project_path)
     if not os.path.isdir(project_path + project):
         raise NameError, "The project '%s' does not exist." % project
     if not os.path.exists(project_path + project + "/out.txt"):
         raise NameError, "Result file from project '%s' is missing" % project
+    if not type(minweigth) == int:
+        raise TypeError, "Minweight needs to be an Integer >= 1"
+    if minweight < 1:
+        raise ValueError, "Minweight needs to be larger than or equal to 1."
     corr_map, mappings = build_matrix(project_path + project + "/out.txt",
         categories=categories, highlight=highlight,  exclude=exclude,
         color_scheme=color_scheme)
