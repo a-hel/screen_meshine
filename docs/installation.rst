@@ -25,12 +25,12 @@ Once your request is approved, you will recieve your UMLS username and password 
 
 Afterwards, download the NLM Medical Text Indexer API at .. __:https://ii.nlm.nih.gov/Web_API/index.shtml
 
-Unzip the *jar* archive and copy the unzipped folder into the */bin* directory. Make sure the folder is named "SKR_Web_API_V2_1" and rename if necessary.
+Unzip the ``.jar`` archive and copy the unzipped folder into the ``/bin`` directory. Make sure the folder is named "SKR_Web_API_V2_1" and rename if necessary.
 
 .. note:: To get the most recent version, you can clone the repository
 	>>> git clone https://github.com/a-hel/MedCrawler.git
 
-	Then, copy the Web API to the */bin* folder.
+	Then, copy the Web API to the ``/bin`` folder.
 	Last, compile the *Indexer*:
 	>>> ./src/compile.sh
 
