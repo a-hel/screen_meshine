@@ -13,7 +13,7 @@ MedCrawler is available from Github (https://github.com/a-hel/MedCrawler/release
 
 First, download the *Sources.zip* and unzip it to the location of your choice.
 
-Then, download the file *Indexer.class* and save it in the ``/bin` folder of the MedCrawler directory
+Then, download the file *Indexer.class* and save it in the ``/bin`` folder of the MedCrawler directory
 
 Get the Web API
 ---------------
@@ -27,10 +27,12 @@ Afterwards, download the NLM Medical Text Indexer API at https://ii.nlm.nih.gov/
 
 Unzip the ``.jar`` archive and copy the unzipped folder into the ``/bin`` directory. Make sure the folder is named "SKR_Web_API_V2_1" and rename if necessary.
 
-.. note:: To get the most recent version, you can clone the repository::
-	git clone https://github.com/a-hel/MedCrawler.git
+.. note:: To get the most recent version, you can clone the repository
+
+	``git clone https://github.com/a-hel/MedCrawler.git``
 
 	Then, copy the Web API to the ``/bin`` folder.
-	Last, compile the *Indexer*::
-	./src/compile.sh
+	Last, compile the *Indexer* from inside the ``src`` folder.
+
+	``./compile.sh``
 
