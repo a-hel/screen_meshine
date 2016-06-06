@@ -2,7 +2,7 @@
 
 
 bin_dir=../bin/
-api_dir=SKR_Web_API_V2_1
+api_dir=../bin/SKR_Web_API_V2_1
 plugins=()
 searchterms=()
 
