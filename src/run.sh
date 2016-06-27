@@ -128,4 +128,7 @@ outfile=$res_dir/out.txt
 cd $bin_dir
 java -cp $BASEDIR/classes:$CP Indexer $username $password $email $outfile $infiles
 
+echo "Retrieve leaf nodes..."
+
+python leafer.py $outfile
 echo "Data retrieval for $project done"

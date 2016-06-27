@@ -31,6 +31,7 @@ def _get_colors(cats, col_scheme="default"):
         'E': 'yellow',
         'F': 'black',
         'G': 'white'}
+    default = defaultdict(lambda: 'grey', default)
     all_schemes = {"default": default}
     cur_scheme = all_schemes[col_scheme]
     colors = [cur_scheme[cat[0]] for cat in cats]
@@ -83,10 +84,10 @@ def _load_dataset(res_file, categories, exclude=[]):
                 posts[cur_key] = []
             else:
                 data = line.split("|")
-                mesh = data[1].lstrip("*")
+                mesh = data[0]
                 if mesh in exclude:
                     continue
-                cat = data[2]
+                cat = data[1]
                 if _is_in_cat(cat, categories):
                     posts[cur_key].append((mesh, cat))
     return posts
@@ -145,9 +146,11 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     lookup = {term: idx for idx, term in enumerate(terms)}
     corr_map = scipy.sparse.dok_matrix((dim, dim), dtype=np.int)
 
-
     for keys in dataset:
-        termline = zip(*dataset[keys])[0]
+        try:
+            termline = zip(*dataset[keys])[0]
+        except IndexError:
+            continue
         if not highlight:
             combs = itertools.combinations(termline, 2)
         else:
@@ -274,13 +277,13 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         os.mkdir(project_path)
     if not os.path.isdir(project_path + project):
         raise NameError, "The project '%s' does not exist." % project
-    if not os.path.exists(project_path + project + "/out.txt"):
+    if not os.path.exists(project_path + project + "/out_indexed.txt"):
         raise NameError, "Result file from project '%s' is missing" % project
     if not type(minweight) == int:
         raise TypeError, "Minweight needs to be an Integer >= 1"
     if minweight < 1:
         raise ValueError, "Minweight needs to be larger than or equal to 1."
-    corr_map, mappings = build_matrix(project_path + project + "/out.txt",
+    corr_map, mappings = build_matrix(project_path + project + "/out_indexed.txt",
         categories=categories, highlight=highlight,  exclude=exclude,
         color_scheme=color_scheme)
     plt, edges = create_plot(corr_map, mappings, minweight=minweight)
@@ -320,7 +323,7 @@ if __name__ == '__main__':
                 minweight = int(sys.argv[i])
             if arg in ('-hl', '--highlight'):
                 i += 1
-                highlight = sys.argv[i]
+                highlight = sys.argv[i].replace("+", " ")
             if arg in ('-c', '--colors'):
                 i += 1
                 color_scheme = sys.argv[i]
