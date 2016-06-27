@@ -276,7 +276,7 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         raise NameError, "The project '%s' does not exist." % project
     if not os.path.exists(project_path + project + "/out.txt"):
         raise NameError, "Result file from project '%s' is missing" % project
-    if not type(minweigth) == int:
+    if not type(minweight) == int:
         raise TypeError, "Minweight needs to be an Integer >= 1"
     if minweight < 1:
         raise ValueError, "Minweight needs to be larger than or equal to 1."
