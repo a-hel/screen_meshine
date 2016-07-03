@@ -11,6 +11,7 @@ def get_category(query, idx=0):
         mesh_id = record_list['esearchresult']['idlist'][idx]
     except KeyError:
         print record_list
+        return ""
     record_data = requests.get(record_db % (db, mesh_id)).json()
     treenum = record_data['result'][mesh_id]['ds_idxlinks'][idx]['treenum']
     meshterm = record_data['result'][mesh_id]['ds_meshterms'][idx]
