@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+src_dir=../src/
 bin_dir=../bin/
 api_dir=../bin/SKR_Web_API_V2_1
 plugins=()
@@ -34,11 +34,11 @@ if [ $# -lt 1 ]; then
     read -p "Enter password: " -s password
     echo ""
     read -p "Enter e-mail address: " email
-    read -p "Enter the plugins you want to use, separated by whitespace.: " -a plugins
+    read -p "Enter the plugins you want to use, separated by whitespace.: " plugins
     echo "Enter the search terms, separated by whitespace."
     echo "If the search term contains a whitespace, replace it with a plus sign."
     echo "Example: Search terms: motorbike car+insurance"
-    read -p "Search terms: " -a searchterms
+    read -p "Search terms: " searchterms
     read -p "Chose how many entries to retrieve per term and plugin: " n_terms
     read -p "Do you want to run the program now (yes/no/help): " status
     case $status in
@@ -53,7 +53,7 @@ else
 	# Argument loop
     while [ "$1" != "" ]; do
         case $1 in
-            -pr | --project )    shift
+            -pr | --project )   shift
                                 project=$1
                                 shift      
                                 ;;
@@ -101,6 +101,7 @@ fi
 
 res_dir=../projects/$project
 mkdir $res_dir
+
 if [ $? == 1 ]; then
 	echo "Project $project already exists."
 	exit 1
@@ -130,5 +131,6 @@ java -cp $BASEDIR/classes:$CP Indexer $username $password $email $outfile $infil
 
 echo "Retrieve leaf nodes..."
 
+cd $src_dir
 python leafer.py $outfile
 echo "Data retrieval for $project done"

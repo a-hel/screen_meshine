@@ -30,7 +30,7 @@ def main(outfile, index_file):
 				try:
 					xf.write("|".join((term, get_category(term))))
 				except IndexError:
-					print(term)
+					print("   Error while processing '%s'" % term)
 				xf.write("\n")
 
 
