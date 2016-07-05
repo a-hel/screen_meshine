@@ -273,6 +273,11 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
     """
 
     project_path = "../projects/"
+    gid = 1
+    graph_name = lambda: '/graph_%s.png' % gid
+    while os.path.isfile(graph_name()):
+        gid += 1
+
     if not os.path.isdir(project_path):
         os.mkdir(project_path)
     if not os.path.isdir(project_path + project):
@@ -295,7 +300,7 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         for edge in edges:
             f.write(", ".join(edge))
             f.write("\n")
-    plt.savefig(project_path + project +'/graph_%s.png' % gid)
+    plt.savefig(project_path + project + graph_name())
     plt.show()
     return True
 
@@ -306,7 +311,6 @@ if __name__ == '__main__':
     exclude = []
     highlight = False
     color_scheme = "default"
-    gid = 1
     if len(sys.argv) <= 1:
         print(usage())
         sys.exit(0)
