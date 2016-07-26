@@ -89,9 +89,24 @@ def _load_dataset(res_file, categories, exclude=[]):
             elif line.startswith('#'):
                 continue
             else:
-                posts.append(line.split("|"))
+                terms = [term.strip() for term in line.split("|") if not term in exclude]
+                posts.append(terms)
     return posts
 
+def _flatten(dataset):
+    """Return lists of MeSH terms, category codes, color codes for unique
+    MeSH terms.
+    Arugments:
+    dataset (list of lists): A dataset as output by _load_dataset()
+    Returns:
+    List of unique terms
+    """
+
+    arr = reduce(list.__add__,[elem for elem in dataset])
+    uniques = list(set(arr))
+    if uniques == []:
+        return False
+    return uniques
 
 def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     color_scheme="default"):
@@ -112,39 +127,36 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     """
 
     dataset = _load_dataset(res_file, categories, exclude)
-    if len(dataset) <= 0:
+    uniques = _flatten(dataset)
+    if len(uniques) <= 0:
         msg = "\nWARNING:\n"
         msg += "Your category settings dont yield any results.\n"
         msg += "Try different category settings."
         print(msg)
         sys.exit(0)
-    dim = len(terms)
-    lookup = {term: idx for idx, term in enumerate(terms)}
+    dim = len(uniques)
+    lookup = {term: idx for idx, term in enumerate(uniques)}
     corr_map = scipy.sparse.dok_matrix((dim, dim), dtype=np.int)
 
-    for keys in dataset:
-        try:
-            termline = zip(*dataset[keys])[0]
-        except IndexError:
-            continue
+    for posts in dataset:
+        #try:
+        #    termline = zip(*dataset[keys])[0]
+        #except IndexError:
+        #    continue
         if not highlight:
-            combs = itertools.combinations(termline, 2)
+            combs = itertools.combinations(posts, 2)
         else:
-            if highlight not in termline:
+            if highlight not in posts:
                 continue
             else:
-                combs = ((highlight, term) for term in termline 
+                combs = ((highlight, term) for term in posts 
                         if term != highlight)
         for x,y in combs:
             corr_map[lookup[x], lookup[y]] += 1
-    mappings = {'lookup': lookup,
-        'terms': terms, 
-        'cats': cats, 
-        'colors': colors}
     corr_map = corr_map + corr_map.transpose()
-    return corr_map, mappings
+    return corr_map, uniques
 
-def create_plot(corr_map, mappings, minweight=1):
+def create_plot(corr_map, terms, minweight=1, dpi=300):
     """Draw plot and metadata.
 
     Arguments:
@@ -162,7 +174,6 @@ def create_plot(corr_map, mappings, minweight=1):
     node_scale = 4
     edge_scale = 1
     node_sums = corr_map.sum(axis=0).tolist()[0]
-    terms = mappings['terms']
     edgewidth = []
     nodeprops = []
     lit_edges = []
@@ -185,8 +196,8 @@ def create_plot(corr_map, mappings, minweight=1):
     for i, max_ in enumerate(max_correlations):
         if max_ >= minweight:
             G.add_node(i)
-            n_color = mappings['colors'][i]
-            #n_color = 'Green'
+            #n_color = mappings['colors'][i]
+            n_color = 'Green'
             n_size =  node_sums[i]*node_scale
             n_label = terms[i]
             nodeprops.append([n_color, n_size, n_label, i])
@@ -208,11 +219,13 @@ def create_plot(corr_map, mappings, minweight=1):
     edgewidth = np.around(np.log(edgewidth))*edge_scale
     nodesize = np.array(nodesize, dtype='uint8')*node_scale
     nodelabels_dict = {idx[i]: lbl for i, lbl in enumerate(nodelabels)}
-    plt.figure(figsize=(20,20))
+    plt.figure(figsize=(20,20), facecolor="white", dpi=dpi)
     pre_pos = nx.circular_layout(G)
     pos = nx.spring_layout(G, k=None, pos=pre_pos, iterations=100, scale=1)
+    offset = np.array([0, 0.5])
+    textpos = {keys: pos[keys] + offset for keys in pos}
     #pos = nx.circular_layout(G)
-    nx.draw_networkx_labels(G, pos, labels=nodelabels_dict, fontsize=12)
+    nx.draw_networkx_labels(G, textpos, labels=nodelabels_dict, fontsize=12)
     nx.draw_networkx_edges(G, pos, width=edgewidth, edge_color='grey', alpha=0.6)
     nx.draw_networkx_nodes(G, pos, node_size=nodesize, node_color=nodecolor, alpha=0.6)
     #plt.xlim(-0.05,1.05)
@@ -233,7 +246,7 @@ def usage():
     return help_text
 
 def main(project, categories=[], minweight=1, highlight=False, exclude=[],
-    color_scheme="default"):
+    color_scheme="default", source="terms.txt"):
     """Build and show the graph.
 
     Arguments:
@@ -258,16 +271,17 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         os.mkdir(project_path)
     if not os.path.isdir(project_path + project):
         raise NameError, "The project '%s' does not exist." % project
-    if not os.path.exists(project_path + project + "/out_indexed.txt"):
-        raise NameError, "Result file from project '%s' is missing" % project
+    if not os.path.exists(project_path + project + "/" + source):
+        raise NameError, "File '%s' from project '%s' is missing" % (source,
+            project)
     if not type(minweight) == int:
         raise TypeError, "Minweight needs to be an Integer >= 1"
     if minweight < 1:
         raise ValueError, "Minweight needs to be larger than or equal to 1."
-    corr_map, mappings = build_matrix(project_path + project + "/out_indexed.txt",
+    corr_map , terms= build_matrix(project_path + project + "/" + source,
         categories=categories, highlight=highlight,  exclude=exclude,
         color_scheme=color_scheme)
-    plt, edges = create_plot(corr_map, mappings, minweight=minweight)
+    plt, edges = create_plot(corr_map, terms, minweight=minweight)
     with open(project_path + project +'/info_%s.txt' % gid, 'w') as f:
         f.write('# Information for Graph %s\n' % gid)
         f.write('# Project: %s\n' % project)
@@ -276,11 +290,11 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         for edge in edges:
             f.write(", ".join(edge))
             f.write("\n")
-    plt.savefig(project_path + project + graph_name())
+    #plt.savefig(project_path + project + graph_name())
     plt.show()
     return True
 
 
 if __name__ == '__main__':
-    pass
+    main('dummy')
     

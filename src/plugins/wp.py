@@ -7,7 +7,11 @@ from bs4 import BeautifulSoup
 
 def get_post_content(tag, number, page=1):
 	base_url = 'https://public-api.wordpress.com/rest/v1.1/read/tags/%s/posts?number=%s&page=%s' % (tag, number, page)
-	response = requests.get(base_url)
+	try:
+		response = requests.get(base_url)
+	except requests.ConnectionError, e:
+		print("Could not connect to server.\n[ %s ]" % e)
+		return False
 	json_response = json.loads(response.text)
 	for post in json_response['posts']:
 		html = post['content']
