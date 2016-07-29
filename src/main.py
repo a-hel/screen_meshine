@@ -19,6 +19,7 @@ def _retrieve(keywords, n_posts, plugins, chunk_size=100):
 	params = {"tags": keywords, "n_posts": n_posts, "plugins": plugins}
 	post_list = [[]] * chunk_size
 	for i, post in enumerate(mc_scraper.main(**params)):
+		print("Getting data: Chunk %s" % i)
 		idx = i%chunk_size
 		post_list[idx] = post
 		if idx == chunk_size-1:
@@ -95,7 +96,7 @@ def _deploy_crawler(sysargs):
 		os.makedirs(project_dir)
 	for chunk in _retrieve(tags, size, plugins=plugins):
 		indexed_list = _get_index(chunk)
-		_save(to, indexed_list)
+		_save(project_dir, indexed_list)
 	sys.exit(0)
 
 def _deploy_plotter(sysargs):

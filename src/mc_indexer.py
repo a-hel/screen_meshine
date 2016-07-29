@@ -4,21 +4,43 @@ Scan text files for occurences of relevant terms
 Andreas Helfenstein 2016
 """
 from collections import defaultdict
+import os
 
-def _get_thesaurus():
+class smart_dict(dict):
+    def __missing__(self, key):
+        return key
+
+def build_dict(path):
+	source = _get_thesaurus()
+	target = path
+	sep = "|"
+	cui_pos = 0
+	term_pos = 14
+	pref_pos = 6
+
+	with open(source, "r") as s, open(target, "w") as t:
+		for line in s:
+			l = line.split(sep)
+			if not l[pref_pos] == "Y":
+				continue
+			t.write(l[cui_pos] + sep + l[term_pos] + "\n")
+	return True
+
+def _get_thesaurus(thesaurus="../MRCONSO.RRF"):
 	"""Return location of thesaurus file
 	"""
 
-	return "../MRCONSO.RRF"
+	return thesaurus
 
-def _get_term_source():
+def _get_term_source(dictionary="../DICT.txt"):
 	"""Return location of term lookup file
 	"""
 
-	#return "../MRXNS_ENG.RRF"
-	return "../dummy.txt"
+	if not os.path.isfile(dictionary):
+		build_dict(dictionary)
+	return dictionary
 
-def get_lookup_table(sep=","):
+def get_lookup_table(sep="|"):
 	"""Read lookup file and return as dict.
 	Aruguments:
 	sep (str, default=","): Separator used in lookup file
@@ -30,7 +52,8 @@ def get_lookup_table(sep=","):
 	with open(f_source, "r") as f:
 		pairs = [l.split(sep) for l in f]
 	lookup = {cui.strip(): term.strip() for (cui, term) in pairs}
-	lookup = defaultdict(lambda: "undef", lookup)
+	#lookup = defaultdict(lambda: "undef", lookup)
+	lookup = smart_dict(lookup)
 	return lookup
 
 def cui_to_terms(cui_list):
@@ -79,6 +102,7 @@ def walkthrough(thesaurus, posts, sep="|", pos=14, max_steps="*"):
 	"""
 
 	n_posts = len(posts)
+	print("Analysis of %s posts." % n_posts)
 	term_list = [[] for _ in range(len(posts))]
 	with open(thesaurus, "r") as thes:
 		for e, line in enumerate(thes):
