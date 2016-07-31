@@ -11,7 +11,7 @@ from datetime import datetime
 
 import mc_scraper
 import mc_indexer
-import mc_grapher
+#import mc_grapher
 
 def _retrieve(keywords, n_posts, plugins, chunk_size=100):
 	"""Retrieve posts chunkwise"""
@@ -135,7 +135,7 @@ def _deploy_plotter(sysargs):
 
 def showhelp():
 	"""Display help and usage"""
-	
+
 	print("This is the help")
 	return True
 
@@ -153,4 +153,3 @@ if __name__ == '__main__':
 		print("Unknown command '%s'\n" % job)
 		showhelp()
 		sys.exit(0)
-
