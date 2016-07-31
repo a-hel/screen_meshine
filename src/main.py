@@ -9,22 +9,14 @@ Andreas Helfenstein 2016
 import sys, os
 from datetime import datetime
 
-import mc_scraper
+#import mc_scraper
 import mc_indexer
 #import mc_grapher
 
-def _retrieve(keywords, n_posts, plugins, chunk_size=100):
-	"""Retrieve posts chunkwise"""
+#reload(mc_grapher)
 
-	params = {"tags": keywords, "n_posts": n_posts, "plugins": plugins}
-	post_list = [[]] * chunk_size
-	for i, post in enumerate(mc_scraper.main(**params)):
-		print("Getting data: Chunk %s" % i)
-		idx = i%chunk_size
-		post_list[idx] = post
-		if idx == chunk_size-1:
-			yield post_list
-	yield post_list[0:idx]
+
+
 
 
 def _get_index(posts):
@@ -94,8 +86,7 @@ def _deploy_crawler(sysargs):
 	project_dir = "../projects/%s/" % to
 	if not os.path.exists(project_dir):
 		os.makedirs(project_dir)
-	for chunk in _retrieve(tags, size, plugins=plugins):
-		indexed_list = _get_index(chunk)
+	for indexed_list in mc_indexer.main(tags, size, plugins=plugins):
 		_save(project_dir, indexed_list)
 	sys.exit(0)
 
@@ -147,7 +138,7 @@ if __name__ == '__main__':
 	job = sys.argv[1]
 	if job.lower() in ("c", "crawl"):
 		_deploy_crawler(sys.argv)
-	elif job.lower() == ("p", "plot"):
+	elif job.lower() in ("p", "plot"):
 		_deploy_plotter(sys.argv)
 	else:
 		print("Unknown command '%s'\n" % job)

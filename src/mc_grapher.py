@@ -199,7 +199,7 @@ def create_plot(corr_map, terms, minweight=1, dpi=300):
             #n_color = mappings['colors'][i]
             n_color = 'Green'
             n_size =  node_sums[i]*node_scale
-            n_label = terms[i]
+            n_label = terms[i].decode('utf-8').encode('ascii', errors='ignore')
             nodeprops.append([n_color, n_size, n_label, i])
     if len(nodeprops) == 0:
         msg = "\nERROR:\n"
