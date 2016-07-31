@@ -5,10 +5,11 @@ Andreas Helfenstein 2016
 """
 from collections import defaultdict
 import os
+import multiprocessing
+from functools import partial
 
-class smart_dict(dict):
-    def __missing__(self, key):
-        return key
+import mc_scraper
+
 
 def build_dict(path):
 	source = _get_thesaurus()
@@ -16,12 +17,12 @@ def build_dict(path):
 	sep = "|"
 	cui_pos = 0
 	term_pos = 14
-	pref_pos = 6
+	source_pos = 11
 
 	with open(source, "r") as s, open(target, "w") as t:
 		for line in s:
 			l = line.split(sep)
-			if not l[pref_pos] == "Y":
+			if not l[source_pos] in ["MSH", "SNOMEDCT"]:
 				continue
 			t.write(l[cui_pos] + sep + l[term_pos] + "\n")
 	return True
@@ -53,7 +54,7 @@ def get_lookup_table(sep="|"):
 		pairs = [l.split(sep) for l in f]
 	lookup = {cui.strip(): term.strip() for (cui, term) in pairs}
 	#lookup = defaultdict(lambda: "undef", lookup)
-	lookup = smart_dict(lookup)
+	lookup = defaultdict(lambda: "nd", lookup)
 	return lookup
 
 def cui_to_terms(cui_list):
@@ -68,10 +69,10 @@ def cui_to_terms(cui_list):
 	"""
 
 	lookup = get_lookup_table()
-	term_list = [[lookup[cui] for cui in post] for post in cui_list]
+	term_list = [[lookup[cui] for cui in post if cui != "nd"] for post in cui_list]
 	return term_list
 
-def find_terms(search_term, posts):
+def find_terms(thes_dict, post):
 	"""Find a term in a list of blog posts
 	Arguments:
 	search_term (str): The term to look for
@@ -80,13 +81,37 @@ def find_terms(search_term, posts):
 	List of the indices of the posts that contain search_term.
 	"""
 
-	ret_val = []
-	for e, post in enumerate(posts):
-		if search_term in post:
-			ret_val.append(e)
+	ret_val = [thes_dict[keys] for keys in thes_dict if keys in post]	
 	return ret_val
 
-def walkthrough(thesaurus, posts, sep="|", pos=14, max_steps="*"):
+def load_thesaurus(thesaurus, sep="|", pos=14, max_steps="*"):
+	thes_dict = {}
+	with open(thesaurus, "r") as thes:
+		for e, line in enumerate(thes):
+			if e > max_steps:
+				break
+			splitted = line.split(sep)
+			search_term = splitted[pos].strip()
+			if len(search_term) <= 4:
+				continue
+				# check idea behind "weird" terms such as "m", "Dip", 2
+				# Then make better workaround
+
+			cui = splitted[0].strip()
+			thes_dict[search_term] = cui
+	print("Thesaurus loaded")
+	return thes_dict
+
+def cross_find(thes_dict, posts):
+	p = multiprocessing.Pool()
+	func = partial(find_terms, thes_dict)
+	found_terms = p.imap(func, posts)
+	p.close()
+	p.join()
+	return found_terms
+
+
+def walkthrough(thes_dict, posts, sep="|", pos=14, max_steps="*"):
 	"""Walk through thesaurus file and return CUI's found in posts
 	Arguments:
 	thesaurus (str): Location of thesaurus file
@@ -101,28 +126,27 @@ def walkthrough(thesaurus, posts, sep="|", pos=14, max_steps="*"):
 		post.
 	"""
 
+	
 	n_posts = len(posts)
 	print("Analysis of %s posts." % n_posts)
-	term_list = [[] for _ in range(len(posts))]
-	with open(thesaurus, "r") as thes:
-		for e, line in enumerate(thes):
-			if e > max_steps:
-				break
-			splitted = line.split(sep)
-			search_term = splitted[pos].strip()
-			if len(search_term) <= 4:
-				continue
-				# check idea behind "weird" terms such as "m", "Dip", 2
-				# Then make better workaround
-
-			cui = splitted[0].strip()
-			occurences = find_terms(search_term, posts)
-			for occurence in occurences:
-				term_list[occurence].append(cui)
+	term_list = cross_find(thes_dict, posts)
 	cui_list = [list(set(sublist)) for sublist in term_list]
 	return cui_list
 
-def main(posts):
+def _retrieve(keywords, n_posts, plugins, chunk_size=4):
+	"""Retrieve posts chunkwise"""
+
+	params = {"tags": keywords, "n_posts": n_posts, "plugins": plugins}
+	post_list = [[]] * chunk_size
+	for i, post in enumerate(mc_scraper.main(**params)):
+		print("Getting data: Chunk %s" % i)
+		idx = i%chunk_size
+		post_list[idx] = post
+		if idx == chunk_size-1:
+			yield post_list
+	yield post_list[0:idx]
+
+def main(tags, size, plugins):
 	"""Scan posts for occurences of relevant terms.
 	Arguments:
 	posts (list of str): Posts or pieces of text to analyse, as
@@ -130,9 +154,11 @@ def main(posts):
 	Returns:
 	List of list with the terms found in each post.
 	"""
-
-	cui_list = walkthrough(_get_thesaurus(), posts, max_steps="*")
-	terms = cui_to_terms(cui_list)
+	thes_dict = load_thesaurus(_get_thesaurus())
+	for chunk in _retrieve(tags, size, plugins=plugins):
+		cui_list = walkthrough(thes_dict, chunk, max_steps="*")
+		terms = cui_to_terms(cui_list)
+		#_save(project_dir, indexed_list)
 	return terms
 
 if __name__ == '__main__':
