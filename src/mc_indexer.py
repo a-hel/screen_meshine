@@ -81,7 +81,7 @@ def find_terms(thes_dict, post):
 	List of the indices of the posts that contain search_term.
 	"""
 
-	ret_val = [thes_dict[keys] for keys in thes_dict if keys in post]	
+	ret_val = [thes_dict[keys] for keys in thes_dict if keys in post]
 	return ret_val
 
 def load_thesaurus(thesaurus, sep="|", pos=14, max_steps="*"):
@@ -108,7 +108,7 @@ def cross_find(thes_dict, posts):
 	found_terms = p.imap(func, posts)
 	p.close()
 	p.join()
-	return found_terms
+	return list(found_terms)
 
 
 def walkthrough(thes_dict, posts, sep="|", pos=14, max_steps="*"):
@@ -159,7 +159,7 @@ def main(tags, size, plugins):
 		cui_list = walkthrough(thes_dict, chunk, max_steps="*")
 		terms = cui_to_terms(cui_list)
 		#_save(project_dir, indexed_list)
-	return terms
+		yield terms
 
 if __name__ == '__main__':
 	pass
