@@ -93,6 +93,8 @@ def _deploy_crawler(sysargs):
 	project_dir = "../projects/%s/" % to
 	if not os.path.exists(project_dir):
 		os.makedirs(project_dir)
+
+	index = mc_indexer.build_index("../desc2016.xml)
 	for chunk in _retrieve(tags, size, plugins=plugins):
 		indexed_list = _get_index(chunk)
 		_save(to, indexed_list)
@@ -146,7 +148,7 @@ if __name__ == '__main__':
 	job = sys.argv[1]
 	if job.lower() in ("c", "crawl"):
 		_deploy_crawler(sys.argv)
-	elif job.lower() == ("p", "plot"):
+	elif job.lower() in ("p", "plot"):
 		_deploy_plotter(sys.argv)
 	else:
 		print("Unknown command '%s'\n" % job)

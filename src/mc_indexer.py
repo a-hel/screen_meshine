@@ -4,6 +4,7 @@ Scan text files for occurences of relevant terms
 Andreas Helfenstein 2016
 """
 from collections import defaultdict
+import xml.etree.cElementTree as ET
 
 def _get_thesaurus():
 	"""Return location of thesaurus file
@@ -97,6 +98,20 @@ def walkthrough(thesaurus, posts, sep="|", pos=14, max_steps="*"):
 				term_list[occurence].append(cui)
 	cui_list = [list(set(sublist)) for sublist in term_list]
 	return cui_list
+
+def _find_concepts(sourcefile):
+	e = ET.parse(sourcefile).getroot()
+	for descriptor in e.iter("DescriptorRecord"):
+		name = descriptor.find("DescriptorName").find("String").text
+		leaf = descriptor.find("TreeNumberList").find("TreeNumber").text
+		synelem = descriptor.find("ConceptList").find("Concept").find("TermList")
+		synterms = synelem.findall("Term")
+		synonyms = [syn.find("String").text for syn in synterms]
+		yield (name, leaf, synonyms)
+
+def build_index(sourcefile):
+	for name, leaf, synonyms in _find_concepts(sourcefile):
+		pass
 
 def main(posts):
 	"""Scan posts for occurences of relevant terms.

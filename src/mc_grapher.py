@@ -156,7 +156,7 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
     corr_map = corr_map + corr_map.transpose()
     return corr_map, uniques
 
-def create_plot(corr_map, terms, minweight=1, dpi=300):
+def create_plot(corr_map, terms, minweight=1, dpi=150):
     """Draw plot and metadata.
 
     Arguments:
@@ -216,16 +216,21 @@ def create_plot(corr_map, terms, minweight=1, dpi=300):
             edgewidth.append(weight)
             G.add_edge(start, end)
     edgewidth = np.array(edgewidth, dtype='uint8')
-    edgewidth = np.around(np.log(edgewidth))*edge_scale
+
+
+    #edgewidth = np.around(np.log(edgewidth))*edge_scale
+
+
+
     nodesize = np.array(nodesize, dtype='uint8')*node_scale
     nodelabels_dict = {idx[i]: lbl for i, lbl in enumerate(nodelabels)}
-    plt.figure(figsize=(20,20), facecolor="white", dpi=dpi)
+    plt.figure(figsize=(50,50), facecolor="white", dpi=dpi)
     pre_pos = nx.circular_layout(G)
-    pos = nx.spring_layout(G, k=None, pos=pre_pos, iterations=100, scale=1)
+    pos = nx.spring_layout(G, k=None, pos=pre_pos, iterations=100, scale=30)
     offset = np.array([0, 0.5])
-    textpos = {keys: pos[keys] + offset for keys in pos}
+    #textpos = {keys: pos[keys] + offset for keys in pos}
     #pos = nx.circular_layout(G)
-    nx.draw_networkx_labels(G, textpos, labels=nodelabels_dict, fontsize=12)
+    nx.draw_networkx_labels(G, pos, labels=nodelabels_dict, fontsize=2)
     nx.draw_networkx_edges(G, pos, width=edgewidth, edge_color='grey', alpha=0.6)
     nx.draw_networkx_nodes(G, pos, node_size=nodesize, node_color=nodecolor, alpha=0.6)
     #plt.xlim(-0.05,1.05)
@@ -290,8 +295,8 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         for edge in edges:
             f.write(", ".join(edge))
             f.write("\n")
-    #plt.savefig(project_path + project + graph_name())
-    plt.show()
+    plt.savefig(project_path + project + graph_name())
+    #plt.show()
     return True
 
 
