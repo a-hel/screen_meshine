@@ -54,4 +54,5 @@ fi
 
 # Invoke python scraper
 
-python -m cProfile main.py $py_string
+#python -m cProfile main.py $py_string
+python main.py $py_string

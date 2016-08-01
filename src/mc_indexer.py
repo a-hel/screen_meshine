@@ -7,6 +7,8 @@ from collections import defaultdict
 import os
 import multiprocessing
 from functools import partial
+from os import path
+import re
 
 import mc_scraper
 
@@ -72,7 +74,17 @@ def cui_to_terms(cui_list):
 	term_list = [[lookup[cui] for cui in post if cui != "nd"] for post in cui_list]
 	return term_list
 
-def find_terms(thes_dict, post):
+def getcui(thesaurus, word):
+
+	path_ = path.join(thesaurus, *word)
+	fpath = path_ + "/endnode.txt" 
+	if os.isfile(fpath):
+		with open(fpath, "r") as f:
+			cui = f.readline().strip()
+		return cui
+	return False
+
+def find_terms(thesaurus, post):
 	"""Find a term in a list of blog posts
 	Arguments:
 	search_term (str): The term to look for
@@ -80,38 +92,55 @@ def find_terms(thes_dict, post):
 	Returns:
 	List of the indices of the posts that contain search_term.
 	"""
-
-	ret_val = [thes_dict[keys] for keys in thes_dict if keys in post]
+	words = re.compile("\w+").findall(words)
+	ret_val = [getcui(thesaurus, word) for word in words if word]
 	return ret_val
 
-def load_thesaurus(thesaurus, sep="|", pos=14, max_steps="*"):
-	thes_dict = {}
-	with open(thesaurus, "r") as thes:
+def build_thesaurus(source, target, sep="|", pos=14, max_steps="*"):
+	langpos = 1
+	try:
+		os.mkdir(target)
+	except OSError, e:
+		return target
+	with open(source, "r") as thes:
 		for e, line in enumerate(thes):
 			if e > max_steps:
 				break
 			splitted = line.split(sep)
-			search_term = splitted[pos].strip()
+			if splitted[langpos] != "ENG":
+				continue
+
+			search_term = splitted[pos].strip().replace(" ", "+")
+			if "Ingredient" in search_term: continue
+			if "Finding" in search_term: continue
 			if len(search_term) <= 4:
 				continue
 				# check idea behind "weird" terms such as "m", "Dip", 2
 				# Then make better workaround
+			if e%1000 == 0:
+				print("%s \t %s" % (e, search_term))
 
 			cui = splitted[0].strip()
-			thes_dict[search_term] = cui
+			path_ = path.join(target, *search_term)
+
+			try:
+				os.makedirs(path_)
+			except OSError:
+				pass
+			try:
+				with open(path_ + "/endnode.txt", "w") as f:
+					f.write(cui)
+			except IOError:
+				print("could not create file '%s'" % path_)
 	print("Thesaurus loaded")
-	return thes_dict
+	return target
 
-def cross_find(thes_dict, posts):
-	p = multiprocessing.Pool()
-	func = partial(find_terms, thes_dict)
-	found_terms = p.imap(func, posts)
-	p.close()
-	p.join()
-	return list(found_terms)
+def cross_find(thesaurus, posts):
+	found_terms = [find_terms(thesaurus, post) for post in posts]
+	return found_terms
 
 
-def walkthrough(thes_dict, posts, sep="|", pos=14, max_steps="*"):
+def walkthrough(thesaurus, posts, sep="|", pos=14, max_steps="*"):
 	"""Walk through thesaurus file and return CUI's found in posts
 	Arguments:
 	thesaurus (str): Location of thesaurus file
@@ -146,7 +175,7 @@ def _retrieve(keywords, n_posts, plugins, chunk_size=4):
 			yield post_list
 	yield post_list[0:idx]
 
-def main(tags, size, plugins):
+def main(tags, size, plugins, thesaurus="../UMLS"):
 	"""Scan posts for occurences of relevant terms.
 	Arguments:
 	posts (list of str): Posts or pieces of text to analyse, as
@@ -154,9 +183,11 @@ def main(tags, size, plugins):
 	Returns:
 	List of list with the terms found in each post.
 	"""
-	thes_dict = load_thesaurus(_get_thesaurus())
+
+	if not path.isdir(thesaurus):
+		build_thesaurus(_get_thesaurus(), thesaurus)
 	for chunk in _retrieve(tags, size, plugins=plugins):
-		cui_list = walkthrough(thes_dict, chunk, max_steps="*")
+		cui_list = walkthrough(thesaurus, chunk, max_steps="*")
 		terms = cui_to_terms(cui_list)
 		#_save(project_dir, indexed_list)
 		yield terms
