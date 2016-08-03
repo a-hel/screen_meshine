@@ -11,8 +11,11 @@ def get_post_content(tag, number, page=1):
 		response = requests.get(base_url)
 	except requests.ConnectionError, e:
 		print("Could not connect to server.\n[ %s ]" % e)
-		return False
-	json_response = json.loads(response.text)
+		yield False
+	try:
+		json_response = json.loads(response.text)
+	except ValueError:
+		yield False
 	for post in json_response['posts']:
 		html = post['content']
 		yield html
@@ -35,8 +38,8 @@ def _dispatch(tags, size):
 		for i in xrange(cycles):
 			print("WP plugin loading posts for '%s', cycle %s of %s" % (tag, i+1, cycles))
 			for post in get_post_content(tag, ppp, page=i+1):
-				#plain_text = _clean_post(post)
-				#yield plain_text
+				if not post:
+					continue
 				yield post
 
 def main(tags, size=1):

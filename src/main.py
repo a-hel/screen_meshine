@@ -46,7 +46,8 @@ def _save(project, term_list, comment=False):
 		if comment:
 			f.write('# Comment: %s \n' % comment)
 		for items in term_list:
-			f.write("|".join(items))
+			stritems = [str(item) for item in items if item]
+			f.write("|".join(stritems))
 			f.write("\n")
 
 def _plot(project, categories=[], minweight=1, highlight=False, exclude=[]):
@@ -94,9 +95,9 @@ def _deploy_crawler(sysargs):
 	if not os.path.exists(project_dir):
 		os.makedirs(project_dir)
 
-	index = mc_indexer.build_index("../desc2016.xml)
+	index = mc_indexer.build_index("../desc2016.xml")
 	for chunk in _retrieve(tags, size, plugins=plugins):
-		indexed_list = _get_index(chunk)
+		indexed_list = mc_indexer.traverse(index, chunk)
 		_save(to, indexed_list)
 	sys.exit(0)
 

@@ -31,13 +31,14 @@ def _get_colors(cats, col_scheme="default"):
     List of strings of the same length as cats
     """
 
-    default = {'A': 'red',
-        'B': 'blue',
-        'C': 'green',
-        'D': 'orange',
+    default = {'A': 'blue', # Anatomy
+        'B': 'green',       # Organisms
+        'C': 'orange',      # Diseases
+        'D': 'red',         # Chemicals and Drugs
         'E': 'yellow',
         'F': 'black',
-        'G': 'white'}
+        'G': 'white',
+        'N': 'pink'}        # Healthcare
     default = defaultdict(lambda: 'grey', default)
     all_schemes = {"default": default}
     cur_scheme = all_schemes[col_scheme]
@@ -82,6 +83,7 @@ def _load_dataset(res_file, categories, exclude=[]):
     """
 
     posts = []
+    lookup = {}
     with open(res_file, "r") as f:
         for line in f:
             if line.isspace():
@@ -89,9 +91,14 @@ def _load_dataset(res_file, categories, exclude=[]):
             elif line.startswith('#'):
                 continue
             else:
-                terms = [term.strip() for term in line.split("|") if not term in exclude]
+                terms = [eval(term) for term in line.split("|")]
+                temp_lookup = {term[0]: term[1] for term in terms}
+                lookup.update(temp_lookup)
+                terms = [term for term in temp_lookup.keys() if 
+                    _is_in_cat(temp_lookup[term], categories) and
+                    term not in exclude]
                 posts.append(terms)
-    return posts
+    return posts, lookup
 
 def _flatten(dataset):
     """Return lists of MeSH terms, category codes, color codes for unique
@@ -126,23 +133,20 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
 
     """
 
-    dataset = _load_dataset(res_file, categories, exclude)
+    dataset, lookup = _load_dataset(res_file, categories, exclude)
     uniques = _flatten(dataset)
-    if len(uniques) <= 0:
+    dim = len(uniques)
+    if dim <= 0:
         msg = "\nWARNING:\n"
         msg += "Your category settings dont yield any results.\n"
         msg += "Try different category settings."
         print(msg)
         sys.exit(0)
-    dim = len(uniques)
-    lookup = {term: idx for idx, term in enumerate(uniques)}
+    pos_idx = {term: e for e, term in enumerate(uniques)}
+    colors = _get_colors([lookup[uniq] for uniq in uniques])
     corr_map = scipy.sparse.dok_matrix((dim, dim), dtype=np.int)
 
     for posts in dataset:
-        #try:
-        #    termline = zip(*dataset[keys])[0]
-        #except IndexError:
-        #    continue
         if not highlight:
             combs = itertools.combinations(posts, 2)
         else:
@@ -151,12 +155,12 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
             else:
                 combs = ((highlight, term) for term in posts 
                         if term != highlight)
-        for x,y in combs:
-            corr_map[lookup[x], lookup[y]] += 1
+        for x, y in combs:
+            corr_map[pos_idx[x], pos_idx[y]] += 1
     corr_map = corr_map + corr_map.transpose()
-    return corr_map, uniques
+    return corr_map, uniques, colors
 
-def create_plot(corr_map, terms, minweight=1, dpi=150):
+def create_plot(corr_map, terms, colors, minweight=1, dpi=600):
     """Draw plot and metadata.
 
     Arguments:
@@ -171,9 +175,14 @@ def create_plot(corr_map, terms, minweight=1, dpi=150):
     Matplotlib plot, edge metadata
     """
 
-    node_scale = 4
+    node_scale = 10
     edge_scale = 1
     node_sums = corr_map.sum(axis=0).tolist()[0]
+    node_sums = np.array(node_sums)
+    #print node_sums2
+    #print np.array(node_sums, dtype='uint8')
+    #print type(node_sums)
+    #5/0
     edgewidth = []
     nodeprops = []
     lit_edges = []
@@ -192,13 +201,13 @@ def create_plot(corr_map, terms, minweight=1, dpi=150):
             msg += "%s \t %s \n" % pair
         print(msg)
         sys.exit(0)
-    node_sums = corr_map_coo.sum(axis=0).tolist()[0]
+    #node_sums = corr_map_coo.sum(axis=0).tolist()[0]
     for i, max_ in enumerate(max_correlations):
         if max_ >= minweight:
             G.add_node(i)
-            #n_color = mappings['colors'][i]
-            n_color = 'Green'
-            n_size =  node_sums[i]*node_scale
+            n_color = colors[i]
+            #n_color = 'Green'
+            n_size =  node_sums[i]#*node_scale
             n_label = terms[i]
             nodeprops.append([n_color, n_size, n_label, i])
     if len(nodeprops) == 0:
@@ -215,22 +224,17 @@ def create_plot(corr_map, terms, minweight=1, dpi=150):
             lit_edges.append((terms[start], terms[end], str(weight)))
             edgewidth.append(weight)
             G.add_edge(start, end)
-    edgewidth = np.array(edgewidth, dtype='uint8')
-
-
-    #edgewidth = np.around(np.log(edgewidth))*edge_scale
-
-
-
-    nodesize = np.array(nodesize, dtype='uint8')*node_scale
+    edgewidth = np.array(edgewidth)*edge_scale
+    nodesize = np.array(nodesize)*node_scale
     nodelabels_dict = {idx[i]: lbl for i, lbl in enumerate(nodelabels)}
+
     plt.figure(figsize=(50,50), facecolor="white", dpi=dpi)
     pre_pos = nx.circular_layout(G)
     pos = nx.spring_layout(G, k=None, pos=pre_pos, iterations=100, scale=30)
     offset = np.array([0, 0.5])
     #textpos = {keys: pos[keys] + offset for keys in pos}
     #pos = nx.circular_layout(G)
-    nx.draw_networkx_labels(G, pos, labels=nodelabels_dict, fontsize=2)
+    nx.draw_networkx_labels(G, pos, labels=nodelabels_dict, font_size=30)
     nx.draw_networkx_edges(G, pos, width=edgewidth, edge_color='grey', alpha=0.6)
     nx.draw_networkx_nodes(G, pos, node_size=nodesize, node_color=nodecolor, alpha=0.6)
     #plt.xlim(-0.05,1.05)
@@ -269,7 +273,11 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
     project_path = "../projects/"
     gid = 1
     graph_name = lambda: '/graph_%s.png' % gid
-    while os.path.isfile(graph_name()):
+    keywords = {'res_file': project_path + project + "/" + source,
+        'categories': categories, 'highlight': highlight, 'exclude': exclude,
+        'color_scheme': color_scheme}
+
+    while os.path.isfile(project_path + project + graph_name()):
         gid += 1
 
     if not os.path.isdir(project_path):
@@ -283,10 +291,10 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         raise TypeError, "Minweight needs to be an Integer >= 1"
     if minweight < 1:
         raise ValueError, "Minweight needs to be larger than or equal to 1."
-    corr_map , terms= build_matrix(project_path + project + "/" + source,
-        categories=categories, highlight=highlight,  exclude=exclude,
-        color_scheme=color_scheme)
-    plt, edges = create_plot(corr_map, terms, minweight=minweight)
+
+    corr_map , terms, colors = build_matrix(**keywords)
+    plt, edges = create_plot(corr_map, terms, colors, minweight=minweight)
+
     with open(project_path + project +'/info_%s.txt' % gid, 'w') as f:
         f.write('# Information for Graph %s\n' % gid)
         f.write('# Project: %s\n' % project)
@@ -301,5 +309,5 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
 
 
 if __name__ == '__main__':
-    main('dummy')
+    main('Example1')
     
