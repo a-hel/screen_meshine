@@ -56,10 +56,10 @@ mc_grapher
 	:param categories: The MeSH categories to include. If
 	    the list is empty, all categories will be included.
 	:type categories: list of str
-	:param minweight (int, default=1): Minimum weight necessary for connections
+	:param minweight: Minimum weight necessary for connections
 	    to be displayed.
 	:type minweight: int
-	:param highlight (str, default=False): A specific term to highlight. If
+	:param highlight: A specific term to highlight. If
 	    false, no term will be highlighted
 	:type highlight: str
 	:param exclude: List of terms to exclude from the analysis.
@@ -72,8 +72,7 @@ mc_grapher
 	:rtype: None
 
 
-.. function:: build_matrix(res_file[, categories=[], highlight=False, exclude=[],
-    color_scheme="default"])
+.. function:: build_matrix(res_file[, categories=[], highlight=False, exclude=[], color_scheme="default"])
 
     Build and return the correlation matrix and node labels and their colors
 
