@@ -12,6 +12,8 @@ import mc_tree
 
 
 def _walkthrough(index, post, sep="|"):
+	""" Return words in post that are in index """
+
 	words = re.compile("\w+").findall(post)
 	word_nodes = [mc_tree.walk(index, word) for word in words]
 	idx = [word_node.endvalue for word_node in word_nodes if word_node]
@@ -21,6 +23,8 @@ def _walkthrough(index, post, sep="|"):
 
 
 def _find_concepts(sourcefile):
+	""" Extract MeSH terms, synonyms and treenode from MeSH xml descriptor """
+
 	e = ET.parse(sourcefile).getroot()
 	for descriptor in e.iter("DescriptorRecord"):
 		name = descriptor.find("DescriptorName").find("String").text
@@ -35,7 +39,19 @@ def _find_concepts(sourcefile):
 		yield (name, leaf, synonyms)
 
 def build_index(sourcefile):
+	""" Build index based on sourcefile.
+
+	Argument:
+
+	sourcefile (str): Path and file name of the MeSH database (e.g. 
+		desc2016.xml)
 	basenode = mc_tree.Node("basenode")
+
+	Returns:
+
+	mc_tree.Node
+	"""
+
 	i = 0
 	for name, leaf, synonyms in _find_concepts(sourcefile):
 		rightmosts = [mc_tree.build(basenode, synonym) for synonym in synonyms]
@@ -48,6 +64,18 @@ def build_index(sourcefile):
 	return basenode
 
 def traverse(index, posts):
+	""" Find indexed words from posts
+
+	Arguments:
+
+	index (mc_tree.Node): The tree node from where to start the search
+	posts (list of str): List of all the posts in pure ASCII
+
+	Returns:
+
+	List of tuples (found terms, tree number)
+	"""
+	
 	indexed_list = [_walkthrough(index, post) for post in posts]
 	return indexed_list
 

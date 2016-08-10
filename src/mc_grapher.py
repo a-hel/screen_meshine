@@ -129,7 +129,13 @@ def build_matrix(res_file, categories=[], highlight=False, exclude=[],
 
     Returns:
 
-    Correlation matrix, metadata
+    (corrmap, uniques, colors)
+    corrmap (scipy.sparse.dok_matrix): Sparse matrix containing
+        the number of correlations between terms
+    uniques (list of str): List of unique terms in the same order as the
+        corrmap axes
+    colors (list of str): List of colors according to MeSH category in the
+         same order as the corrmap axes
 
     """
 
@@ -167,8 +173,10 @@ def create_plot(corr_map, terms, colors, minweight=1, dpi=600):
 
     corr_map (scipy.sparse.dok_matrix): Correlation matrix as returned from
         build_matrix()
-    mappings (dict): Correlation metadata as returned from build_matrix()
+    terms (list of str): 
+    colors
     minweight (int, default=1): Minimum number of co-occurrences to draw.
+    dpi (int, default=600): DPI for plot
 
     Returns:
 
@@ -203,6 +211,7 @@ def create_plot(corr_map, terms, colors, minweight=1, dpi=600):
         sys.exit(0)
     #node_sums = corr_map_coo.sum(axis=0).tolist()[0]
     for i, max_ in enumerate(max_correlations):
+
         if max_ >= minweight:
             G.add_node(i)
             n_color = colors[i]
@@ -268,6 +277,8 @@ def main(project, categories=[], minweight=1, highlight=False, exclude=[],
         false, no term will be highlighted
     exclude (list, default=[]): List of terms to exclude from the analysis.
     color_scheme (str, default="default"): Not yet implemented.
+    source (str, default="terms.txt"): Name of sourcefile within project
+        folder
     """
 
     project_path = "../projects/"
