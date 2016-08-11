@@ -11,7 +11,13 @@ from datetime import datetime
 
 import mc_scraper
 import mc_indexer
-import mc_grapher
+
+try:
+    import mc_grapher
+except ImportError, e:
+    print("\n!!! Warning: Unable to load the Grapher module.\n")
+    print("You can still use the Scraper to retrieve data.")
+    print(e)
 
 def _retrieve(keywords, n_posts, plugins, chunk_size=100):
 	"""Retrieve posts chunkwise"""

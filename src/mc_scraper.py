@@ -52,7 +52,7 @@ def _import_plugins(names=False, pluginpath='./plugins/'):
 			print('!! Could not load plugin %s:\n!! %s' % (name, e))
 	return all_plugins
 
-	
+
 
 def main(tags, n_posts, plugins=('wp'), target="new_project"):
 	"""Retrieve blog posts.
@@ -67,18 +67,14 @@ def main(tags, n_posts, plugins=('wp'), target="new_project"):
 	"""
 
 	engines = _import_plugins(plugins)
-	f_counter = 0
-	f_list = []
-	text_list = []
-
 	for engine in engines:
-		# Plug-ins recieve the number of posts to return and 
+		# Plug-ins recieve the number of posts to return and
 		# yield chuncks of posts
 
 		for txt in engine.main(tags, n_posts):
 			cleantxt = _clean_post(txt)
 			yield cleantxt
-			
+
 
 if __name__ == "__main__":
 	i = 1
@@ -91,7 +87,7 @@ if __name__ == "__main__":
 		arg = sys.argv[i]
 		if arg.startswith('-'):
 			if arg in ('-h', '--help'):
-				print(helptext)
+				print('helptext')
 				break
 			if arg in ('-pr', '--project'):
 				i += 1
@@ -105,7 +101,6 @@ if __name__ == "__main__":
 			tags.append(arg)
 		i += 1
 
-	main(tags, size, plugins=plugins, 
+	main(tags, size, plugins=plugins,
 		target=to)
 	sys.exit(0)
-

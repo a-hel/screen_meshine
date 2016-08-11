@@ -4,7 +4,7 @@ Scan text files for occurences of relevant terms
 Andreas Helfenstein 2016
 """
 #from collections import defaultdict
-import re
+import re, sys
 import xml.etree.cElementTree as ET
 
 import mc_tree
@@ -25,7 +25,11 @@ def _walkthrough(index, post, sep="|"):
 def _find_concepts(sourcefile):
 	""" Extract MeSH terms, synonyms and treenode from MeSH xml descriptor """
 
-	e = ET.parse(sourcefile).getroot()
+	try:
+	    e = ET.parse(sourcefile).getroot()
+	except IOError:
+	    print("\nFile '%s' not found. Did you download it?\n" % sourcefile)
+	    sys.exit(0)
 	for descriptor in e.iter("DescriptorRecord"):
 		name = descriptor.find("DescriptorName").find("String").text
 		try:
@@ -43,22 +47,23 @@ def build_index(sourcefile):
 
 	Argument:
 
-	sourcefile (str): Path and file name of the MeSH database (e.g. 
+	sourcefile (str): Path and file name of the MeSH database (e.g.
 		desc2016.xml)
-	basenode = mc_tree.Node("basenode")
+
 
 	Returns:
 
 	mc_tree.Node
 	"""
 
+	basenode = mc_tree.Node("basenode")
 	i = 0
 	for name, leaf, synonyms in _find_concepts(sourcefile):
 		rightmosts = [mc_tree.build(basenode, synonym) for synonym in synonyms]
 		for rightmost in rightmosts:
 			rightmost.endvalue = (name, leaf)
 		if i%1000 == 0:
-			print("%s \t %s" % (i, name))
+			print("Building index: Entry %s" % i)
 		i += 1
 	print("Index built")
 	return basenode
@@ -75,11 +80,10 @@ def traverse(index, posts):
 
 	List of tuples (found terms, tree number)
 	"""
-	
+
 	indexed_list = [_walkthrough(index, post) for post in posts]
 	return indexed_list
 
 
 if __name__ == '__main__':
 	pass
-	
