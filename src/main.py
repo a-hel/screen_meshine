@@ -9,13 +9,21 @@ Andreas Helfenstein 2016
 import sys, os
 from datetime import datetime
 
-#import mc_scraper
+import mc_scraper
 import mc_indexer
-#import mc_grapher
+import mc_grapher
 
-#reload(mc_grapher)
+def _retrieve(keywords, n_posts, plugins, chunk_size=100):
+	"""Retrieve posts chunkwise"""
 
-
+	params = {"tags": keywords, "n_posts": n_posts, "plugins": plugins}
+	post_list = [[]] * chunk_size
+	for i, post in enumerate(mc_scraper.main(**params)):
+		idx = i%chunk_size
+		post_list[idx] = post
+		if idx == chunk_size-1:
+			yield post_list
+	yield post_list[0:idx]
 
 
 
@@ -39,7 +47,8 @@ def _save(project, term_list, comment=False):
 		if comment:
 			f.write('# Comment: %s \n' % comment)
 		for items in term_list:
-			f.write("|".join(items))
+			stritems = [str(item) for item in items if item]
+			f.write("|".join(stritems))
 			f.write("\n")
 
 def _plot(project, categories=[], minweight=1, highlight=False, exclude=[]):
@@ -86,8 +95,11 @@ def _deploy_crawler(sysargs):
 	project_dir = "../projects/%s/" % to
 	if not os.path.exists(project_dir):
 		os.makedirs(project_dir)
-	for indexed_list in mc_indexer.main(tags, size, plugins=plugins):
-		_save(project_dir, indexed_list)
+
+	index = mc_indexer.build_index("../desc2016.xml")
+	for chunk in _retrieve(tags, size, plugins=plugins):
+		indexed_list = mc_indexer.traverse(index, chunk)
+		_save(to, indexed_list)
 	sys.exit(0)
 
 def _deploy_plotter(sysargs):
