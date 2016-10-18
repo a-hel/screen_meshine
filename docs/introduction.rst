@@ -10,3 +10,5 @@ The **Scraper** looks for blog posts according to user-specified tags. Different
 The **Indexer** finds and exctracts the medically relevant words and returns them as `MeSH <https://en.wikipedia.org/wiki/Medical_subject_headings>`_ terms.
 
 Finally, the **Grapher** analyzes the occurrence of the terms in the various blog posts and presents the correlations in a network graph.
+
+MedCrawler was developed by the Bioactivity Screening Group at the University of Helsinki (2016).
